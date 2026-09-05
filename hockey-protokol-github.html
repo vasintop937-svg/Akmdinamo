@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Протокол матча</title>
+<style>
+  :root{
+    --ice:#eef3f6;
+    --rink:#0d1b2e;
+    --rink-2:#152a44;
+    --line-red:#c62a3a;
+    --line-blue:#2a6fb0;
+    --gold:#e6a339;
+    --text-dim:#9db0c5;
+    --border:#26405f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--rink);
+    background-image:
+      radial-gradient(ellipse at top, rgba(230,163,57,0.06), transparent 55%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+    color:var(--ice);
+    font-family:'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    min-height:100vh;
+    padding-bottom:60px;
+  }
+  h1,h2,h3{font-family:'Arial Narrow', 'Segoe UI', sans-serif; letter-spacing:0.02em; margin:0;}
+  .wrap{max-width:900px; margin:0 auto; padding:16px;}
+
+  .board{
+    background:linear-gradient(180deg, var(--rink-2), #0f2038);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:18px 16px;
+    margin-bottom:18px;
+    position:relative;
+    overflow:hidden;
+  }
+  .board::before{
+    content:"";
+    position:absolute; left:0; right:0; top:50%;
+    height:2px; background:rgba(255,255,255,0.08);
+    transform:translateY(-50%);
+  }
+  .meta-row{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:14px;}
+  .meta-row input{
+    background:transparent; border:none; border-bottom:1px dashed var(--border);
+    color:var(--text-dim); font-size:12px; text-align:center; padding:3px 4px; width:120px;
+  }
+  .meta-row input:focus{outline:none; border-color:var(--gold); color:var(--ice);}
+  .score-line{
+    display:grid; grid-template-columns:1fr auto 1fr;
+    align-items:center; gap:10px; position:relative; z-index:1;
+  }
+  .team-name-box{display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .team-name-box.left{align-items:flex-end;}
+  .team-name-box.right{align-items:flex-start;}
+  .team-name-box input{
+    background:transparent; border:none; color:var(--ice);
+    font-size:19px; font-weight:700; text-align:center; width:100%; max-width:220px;
+    border-bottom:1px solid transparent;
+  }
+  .team-name-box.left input{text-align:right;}
+  .team-name-box.right input{text-align:left;}
+  .team-name-box input:focus{outline:none; border-color:var(--gold);}
+  .swatch{width:26px; height:6px; border-radius:3px;}
+  .swatch.A{background:var(--line-red);}
+  .swatch.B{background:var(--line-blue);}
+  .score-big{
+    display:flex; align-items:center; gap:10px; font-family:'Arial Narrow', sans-serif;
+    font-size:44px; font-weight:800; letter-spacing:1px; color:var(--gold);
+    text-shadow:0 0 18px rgba(230,163,57,0.25);
+  }
+  .score-big .dash{font-size:26px; color:var(--text-dim);}
+  .period-scores{
+    text-align:center; margin-top:10px; color:var(--text-dim); font-size:13px; letter-spacing:0.03em;
+  }
+
+  .card{
+    background:var(--rink-2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px;
+    margin-bottom:16px;
+  }
+  .card h2{
+    font-size:15px; color:var(--gold); text-transform:uppercase; letter-spacing:0.08em;
+    margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border);
+  }
+
+  .rosters{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  @media(max-width:640px){
+    .rosters{gap:6px;}
+    .roster-card{padding:8px;}
+    .roster-card h2{font-size:12px; margin-bottom:6px; padding-bottom:6px;}
+    table{font-size:11px;}
+    th,td{padding:4px 2px;}
+    td.num{width:22px;}
+    td.pos{display:none;}
+    th:nth-child(2){display:none;}
+    .add-row{gap:4px;}
+    .add-row input,.add-row select{padding:6px 5px; font-size:12px;}
+    .add-row input.num-in{width:38px;}
+    .add-row select.pos-in{width:56px;}
+    .add-row input.name-in{min-width:60px;}
+    .coaches-block{font-size:11px;}
+    .coach-line{font-size:11px;}
+  }
+  .roster-card h2.A{color:var(--line-red);}
+  .roster-card h2.B{color:var(--line-blue);}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th,td{padding:6px 4px; text-align:left; border-bottom:1px solid rgba(255,255,255,0.06);}
+  th{color:var(--text-dim); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.04em;}
+  td.num{width:30px; color:var(--gold); font-weight:700;}
+  td.pos{width:40px; color:var(--text-dim); font-size:12px;}
+  td.pts{width:20px; text-align:center; color:var(--text-dim); font-size:12px;}
+  .del-btn{
+    background:none; border:none; color:#6a7c93; cursor:pointer; font-size:15px; padding:2px 6px;
+    line-height:1;
+  }
+  .del-btn:hover{color:var(--line-red);}
+  .add-row{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
+  .add-row input,.add-row select{
+    background:#0f2038; border:1px solid var(--border); color:var(--ice);
+    border-radius:6px; padding:7px 8px; font-size:13px;
+  }
+  .add-row input.num-in{width:52px;}
+  .add-row select.pos-in{width:70px;}
+  .add-row input.name-in{flex:1; min-width:110px;}
+  .btn{
+    background:var(--gold); color:#221602; border:none; border-radius:6px;
+    padding:7px 14px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;
+  }
+  .btn:hover{filter:brightness(1.08);}
+  .btn.secondary{background:transparent; border:1px solid var(--border); color:var(--ice); font-weight:600;}
+  .btn.danger{background:transparent; border:1px solid var(--line-red); color:var(--line-red); font-weight:600;}
+
+  .coaches-block{margin-top:12px; padding-top:10px; border-top:1px dashed var(--border);}
+  .coaches-block h3{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;}
+  .coach-line{display:flex; justify-content:space-between; align-items:center; font-size:13px; padding:3px 0;}
+  .coach-line .role{color:var(--text-dim); font-size:11px; margin-right:6px;}
+  .add-row.coach select{width:120px;}
+
+  .period-tabs{display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;}
+  .period-tab{
+    background:#0f2038; border:1px solid var(--border); color:var(--text-dim);
+    padding:7px 14px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:600;
+  }
+  .period-tab.active{background:var(--gold); color:#221602; border-color:var(--gold);}
+  .event-row{
+    display:grid; grid-template-columns:52px 10px 1fr 60px 26px;
+    gap:8px; align-items:center; padding:8px 4px; border-bottom:1px solid rgba(255,255,255,0.06);
+    font-size:13px;
+  }
+  .event-row .time{color:var(--text-dim); font-variant-numeric:tabular-nums;}
+  .event-row .bar{width:5px; height:22px; border-radius:3px;}
+  .event-row .bar.A{background:var(--line-red);}
+  .event-row .bar.B{background:var(--line-blue);}
+  .event-row .desc b{color:var(--ice);}
+  .event-row .desc .assist{color:var(--text-dim); font-size:12px;}
+  .event-row .after-score{color:var(--gold); font-weight:700; text-align:center; font-variant-numeric:tabular-nums;}
+  .event-row.penalty .after-score{color:var(--text-dim); font-size:11px; text-align:center;}
+  .empty-note{color:var(--text-dim); font-size:13px; padding:10px 4px; font-style:italic;}
+
+  .event-form{margin-top:14px; padding-top:12px; border-top:1px solid var(--border);}
+  .form-grid{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:8px;}
+  .form-grid select, .form-grid input{
+    background:#0f2038; border:1px solid var(--border); color:var(--ice);
+    border-radius:6px; padding:7px 8px; font-size:13px;
+  }
+  .form-grid input.time-in{width:80px;}
+  .form-grid input.min-in{width:60px;}
+  .form-grid input.reason-in{flex:1; min-width:140px;}
+  .type-toggle{display:flex; gap:6px;}
+  .type-toggle button{
+    background:#0f2038; border:1px solid var(--border); color:var(--text-dim);
+    padding:7px 12px; border-radius:6px; cursor:pointer; font-size:13px;
+  }
+  .type-toggle button.active{background:var(--gold); color:#221602; border-color:var(--gold);}
+
+  .stats-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  @media(max-width:640px){
+    .stats-grid{gap:6px;}
+    .stats-grid table{font-size:11px;}
+    .stats-grid th,.stats-grid td{padding:4px 2px;}
+  }
+
+  .topbar{display:flex; justify-content:flex-end; gap:8px; margin-bottom:10px;}
+  .hint{color:var(--text-dim); font-size:12px; text-align:center; margin-top:-6px; margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <button class="btn secondary" id="exportBtn">Экспорт JSON</button>
+    <button class="btn danger" id="resetBtn">Сбросить всё</button>
+  </div>
+
+  <div class="board">
+    <div class="meta-row">
+      <input id="metaDate" placeholder="Дата (дд.мм.гггг)">
+      <input id="metaTime" placeholder="Время">
+      <input id="metaTour" placeholder="Тур / стадия">
+      <input id="metaArena" placeholder="Арена" style="width:180px;">
+    </div>
+    <div class="score-line">
+      <div class="team-name-box left">
+        <input id="teamAName" value="Команда А">
+        <div class="swatch A"></div>
+      </div>
+      <div class="score-big">
+        <span id="scoreA">0</span><span class="dash">:</span><span id="scoreB">0</span>
+      </div>
+      <div class="team-name-box right">
+        <div class="swatch B"></div>
+        <input id="teamBName" value="Команда Б">
+      </div>
+    </div>
+    <div class="period-scores" id="periodScoresLine">(—)</div>
+  </div>
+
+  <div class="card rosters" style="background:none; border:none; padding:0;">
+    <div class="card roster-card">
+      <h2 class="A" id="rosterTitleA">СОСТАВ: Команда А</h2>
+      <table>
+        <thead><tr><th>№</th><th>Поз</th><th>Игрок</th><th>Г</th><th>П</th><th>О</th><th></th></tr></thead>
+        <tbody id="rosterBodyA"></tbody>
+      </table>
+      <div class="add-row">
+        <input class="num-in" id="addNumA" type="text" placeholder="№">
+        <select class="pos-in" id="addPosA">
+          <option value="Вр">Вр</option><option value="Защ">Защ</option><option value="Нап" selected>Нап</option>
+        </select>
+        <input class="name-in" id="addNameA" type="text" placeholder="Фамилия Имя">
+        <button class="btn" onclick="addPlayer('A')">Добавить</button>
+      </div>
+      <div class="coaches-block">
+        <h3>Тренерский состав</h3>
+        <div id="coachesListA"></div>
+        <div class="add-row coach">
+          <select id="addCoachRoleA">
+            <option value="Главный тренер">Главный тренер</option>
+            <option value="Тренер">Тренер</option>
+          </select>
+          <input class="name-in" id="addCoachNameA" type="text" placeholder="ФИО">
+          <button class="btn" onclick="addCoach('A')">Добавить</button>
+        </div>
+      </div>
+    </div>
+    <div class="card roster-card">
+      <h2 class="B" id="rosterTitleB">СОСТАВ: Команда Б</h2>
+      <table>
+        <thead><tr><th>№</th><th>Поз</th><th>Игрок</th><th>Г</th><th>П</th><th>О</th><th></th></tr></thead>
+        <tbody id="rosterBodyB"></tbody>
+      </table>
+      <div class="add-row">
+        <input class="num-in" id="addNumB" type="text" placeholder="№">
+        <select class="pos-in" id="addPosB">
+          <option value="Вр">Вр</option><option value="Защ">Защ</option><option value="Нап" selected>Нап</option>
+        </select>
+        <input class="name-in" id="addNameB" type="text" placeholder="Фамилия Имя">
+        <button class="btn" onclick="addPlayer('B')">Добавить</button>
+      </div>
+      <div class="coaches-block">
+        <h3>Тренерский состав</h3>
+        <div id="coachesListB"></div>
+        <div class="add-row coach">
+          <select id="addCoachRoleB">
+            <option value="Главный тренер">Главный тренер</option>
+            <option value="Тренер">Тренер</option>
+          </select>
+          <input class="name-in" id="addCoachNameB" type="text" placeholder="ФИО">
+          <button class="btn" onclick="addCoach('B')">Добавить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Ход игры по периодам</h2>
+    <div class="period-tabs" id="periodTabs"></div>
+    <div id="eventsList"></div>
+
+    <div class="event-form">
+      <div class="type-toggle">
+        <button id="typeGoalBtn" class="active" onclick="setEventType('goal')">Гол</button>
+        <button id="typePenaltyBtn" onclick="setEventType('penalty')">Штраф</button>
+      </div>
+      <div class="form-grid" style="margin-top:10px;">
+        <input class="time-in" id="evTime" type="text" placeholder="ММ:СС">
+        <select id="evTeam" onchange="refreshPlayerOptions()">
+          <option value="A">Команда А</option>
+          <option value="B">Команда Б</option>
+        </select>
+      </div>
+
+      <div id="goalFields" class="form-grid">
+        <select id="evScorer"><option value="">Автор гола</option></select>
+        <select id="evAssist1"><option value="">Передача 1 (нет)</option></select>
+        <select id="evAssist2"><option value="">Передача 2 (нет)</option></select>
+      </div>
+
+      <div id="penaltyFields" class="form-grid" style="display:none;">
+        <select id="evPenPlayer"><option value="">Нарушитель</option></select>
+        <input class="min-in" id="evPenMin" type="text" placeholder="Мин" value="2">
+        <input class="reason-in" id="evPenReason" type="text" placeholder="Нарушение">
+      </div>
+
+      <button class="btn" onclick="addEvent()">Добавить событие</button>
+      <button class="btn secondary" onclick="addPeriod()">+ Период (овертайм)</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Итоговая статистика</h2>
+    <div class="stats-grid">
+      <div>
+        <h3 style="color:var(--line-red); font-size:13px; margin-bottom:6px;" id="statsTitleA">Команда А</h3>
+        <table><thead><tr><th>№</th><th>Игрок</th><th>Г</th><th>П</th><th>О</th></tr></thead><tbody id="statsBodyA"></tbody></table>
+      </div>
+      <div>
+        <h3 style="color:var(--line-blue); font-size:13px; margin-bottom:6px;" id="statsTitleB">Команда Б</h3>
+        <table><thead><tr><th>№</th><th>Игрок</th><th>Г</th><th>П</th><th>О</th></tr></thead><tbody id="statsBodyB"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <p class="hint">Данные сохраняются автоматически в этом окне. Нажмите «Экспорт JSON», чтобы сохранить копию себе на устройство.</p>
+</div>
+
+<script>
+// --- начальные данные (АКМ 2012), можно менять прямо в интерфейсе ---
+const initialRosterA = [
+  {num:'31', pos:'Вр', name:'Солонников Захар'},
+  {num:'35', pos:'Вр', name:'Колонтаев Владислав'},
+  {num:'4',  pos:'Защ', name:'Вантеев Прохор'},
+  {num:'7',  pos:'Защ', name:'Тимошко Максим'},
+  {num:'8',  pos:'Защ', name:'Прокопенко Николай'},
+  {num:'9',  pos:'Нап', name:'Аккузин Егор'},
+  {num:'10', pos:'Нап', name:'Ситников Кирилл'},
+  {num:'11', pos:'Нап', name:'Кручинин Лев'},
+  {num:'12', pos:'Нап', name:'Толстик Даниил'},
+  {num:'14', pos:'Нап', name:'Ежов Николай'},
+  {num:'15', pos:'Нап', name:'Гулямов Тимур'},
+  {num:'17', pos:'Нап', name:'Богданов Арсений'},
+  {num:'18', pos:'Защ', name:'Пентешкин Никита'},
+  {num:'19', pos:'Нап', name:'Окунев Александр'},
+  {num:'21', pos:'Защ', name:'Артемов Егор'},
+  {num:'22', pos:'Нап', name:'Осипов Кирилл'},
+  {num:'24', pos:'Защ', name:'Гучек Платон'},
+  {num:'25', pos:'Защ', name:'Смирнов Степан'},
+  {num:'29', pos:'Защ', name:'Бобрик Тихон'},
+  {num:'34', pos:'Нап', name:'Никифоров Илья'}
+];
+const initialCoachesA = [
+  {role:'Главный тренер', name:'Беляков Дмитрий Павлович'},
+  {role:'Тренер', name:'Толстик Павел Вячеславович'}
+];
+
+const initialRosterB = [
+  {num:'72', pos:'Вр', name:'Бондарев Роман'},
+  {num:'88', pos:'Вр', name:'Гукасян Гурген'},
+  {num:'7',  pos:'Нап', name:'Закамский Илья'},
+  {num:'8',  pos:'Нап', name:'Шихарев Ипполит'},
+  {num:'10', pos:'Защ', name:'Бакаев Тимур'},
+  {num:'13', pos:'Нап', name:'Бахтов Георгий'},
+  {num:'17', pos:'Защ', name:'Матвеев Платон'},
+  {num:'25', pos:'Нап', name:'Богачёв Владислав'},
+  {num:'27', pos:'Защ', name:'Шумилин Артем'},
+  {num:'29', pos:'Защ', name:'Шумилин Максим'},
+  {num:'40', pos:'Нап', name:'Сорокоумов Артём'},
+  {num:'47', pos:'Защ', name:'Бокарёв Макар'},
+  {num:'77', pos:'Защ', name:'Краснов Павел'},
+  {num:'81', pos:'Нап', name:'Карпов Александр'},
+  {num:'91', pos:'Нап', name:'Бердибаев Руслан'},
+  {num:'92', pos:'Нап', name:'Мягков Даниил'},
+  {num:'93', pos:'Нап', name:'Петров Дмитрий'},
+  {num:'97', pos:'Нап', name:'Ганченко Дмитрий'},
+  {num:'98', pos:'Нап', name:'Бугулов Руслан'},
+  {num:'99', pos:'Нап', name:'Артамонов Кирилл'},
+  {num:'',   pos:'Защ', name:'Иванов Александр'},
+  {num:'',   pos:'Нап', name:'Ганеев Тимур'}
+];
+const initialCoachesB = [
+  {role:'Главный тренер', name:'Акимов Святослав Игоревич'},
+  {role:'Тренер', name:'Фролов Сергей Сергеевич'}
+];
+
+function withIds(list){
+  return list.map(p => ({ id: nextId++, ...p }));
+}
+
+let nextId = 1;
+
+let state = {
+  meta:{date:'', time:'', tour:'', arena:''},
+  teamA:'АКМ 2012', teamB:'Динамо 2012',
+  rosterA: [], rosterB: [],
+  coachesA: initialCoachesA.map(c=>({...c})),
+  coachesB: initialCoachesB.map(c=>({...c})),
+  periods: [ [], [], [] ],
+  eventType:'goal',
+  activePeriod:0
+};
+state.rosterA = withIds(initialRosterA);
+state.rosterB = withIds(initialRosterB);
+
+const STORAGE_KEY = 'hockey-match-state';
+
+async function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const loaded = JSON.parse(raw);
+      state = Object.assign(state, loaded);
+      const allIds = [...state.rosterA, ...state.rosterB].map(p=>p.id||0);
+      nextId = allIds.length ? Math.max(...allIds)+1 : nextId;
+    } else {
+      saveState();
+    }
+  }catch(e){
+    saveState();
+  }
+  renderAll();
+}
+
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){
+    console.error('Storage error', e);
+  }
+}
+
+function parseTime(t){
+  if(!t) return 0;
+  const parts = t.split(':').map(x=>parseInt(x,10)||0);
+  if(parts.length===2) return parts[0]*60+parts[1];
+  return parts[0]||0;
+}
+
+// сортировка для отображения: вратари сверху, дальше по возрастанию номера
+function sortedRoster(roster){
+  return roster.slice().sort((a,b)=>{
+    const goalieA = a.pos==='Вр' ? 0 : 1;
+    const goalieB = b.pos==='Вр' ? 0 : 1;
+    if(goalieA!==goalieB) return goalieA-goalieB;
+    const numA = parseInt(a.num,10); const numB = parseInt(b.num,10);
+    const valA = isNaN(numA) ? Infinity : numA;
+    const valB = isNaN(numB) ? Infinity : numB;
+    return valA - valB;
+  });
+}
+
+function findPlayer(roster, id){
+  return roster.find(p=>p.id===id);
+}
+
+function addPlayer(team){
+  const numEl = document.getElementById('addNum'+team);
+  const posEl = document.getElementById('addPos'+team);
+  const nameEl = document.getElementById('addName'+team);
+  const name = nameEl.value.trim();
+  if(!name){ nameEl.focus(); return; }
+  const roster = team==='A'? state.rosterA : state.rosterB;
+  roster.push({id: nextId++, num: numEl.value.trim() || '-', pos: posEl.value, name: name});
+  numEl.value=''; nameEl.value='';
+  saveState(); renderAll();
+}
+
+function removePlayer(team, id){
+  const roster = team==='A'? state.rosterA : state.rosterB;
+  const idx = roster.findIndex(p=>p.id===id);
+  if(idx>-1) roster.splice(idx,1);
+  saveState(); renderAll();
+}
+
+function addCoach(team){
+  const roleEl = document.getElementById('addCoachRole'+team);
+  const nameEl = document.getElementById('addCoachName'+team);
+  const name = nameEl.value.trim();
+  if(!name){ nameEl.focus(); return; }
+  const list = team==='A'? state.coachesA : state.coachesB;
+  list.push({role: roleEl.value, name});
+  nameEl.value='';
+  saveState(); renderAll();
+}
+
+function removeCoach(team, idx){
+  const list = team==='A'? state.coachesA : state.coachesB;
+  list.splice(idx,1);
+  saveState(); renderAll();
+}
+
+function setEventType(type){
+  state.eventType = type;
+  document.getElementById('typeGoalBtn').classList.toggle('active', type==='goal');
+  document.getElementById('typePenaltyBtn').classList.toggle('active', type==='penalty');
+  document.getElementById('goalFields').style.display = type==='goal' ? 'flex' : 'none';
+  document.getElementById('penaltyFields').style.display = type==='penalty' ? 'flex' : 'none';
+}
+
+function refreshPlayerOptions(){
+  const team = document.getElementById('evTeam').value;
+  const roster = sortedRoster(team==='A'? state.rosterA : state.rosterB);
+  const opts = roster.map(p=>`<option value="${p.id}">${p.num ? p.num : 'б/н'} ${p.name}</option>`).join('');
+  document.getElementById('evScorer').innerHTML = '<option value="">Автор гола</option>'+opts;
+  document.getElementById('evAssist1').innerHTML = '<option value="">Передача 1 (нет)</option>'+opts;
+  document.getElementById('evAssist2').innerHTML = '<option value="">Передача 2 (нет)</option>'+opts;
+  document.getElementById('evPenPlayer').innerHTML = '<option value="">Нарушитель</option>'+opts;
+}
+
+function addEvent(){
+  const time = document.getElementById('evTime').value.trim();
+  const team = document.getElementById('evTeam').value;
+  if(!time){ document.getElementById('evTime').focus(); return; }
+
+  let ev;
+  if(state.eventType==='goal'){
+    const scorerId = document.getElementById('evScorer').value;
+    if(scorerId===''){ alert('Выберите автора гола'); return; }
+    const a1 = document.getElementById('evAssist1').value;
+    const a2 = document.getElementById('evAssist2').value;
+    ev = {
+      type:'goal', team, time,
+      scorer: parseInt(scorerId,10),
+      assist1: a1===''? null : parseInt(a1,10),
+      assist2: a2===''? null : parseInt(a2,10)
+    };
+  } else {
+    const penId = document.getElementById('evPenPlayer').value;
+    if(penId===''){ alert('Выберите нарушителя'); return; }
+    ev = {
+      type:'penalty', team, time,
+      player: parseInt(penId,10),
+      minutes: document.getElementById('evPenMin').value.trim() || '2',
+      reason: document.getElementById('evPenReason').value.trim()
+    };
+  }
+  state.periods[state.activePeriod].push(ev);
+  document.getElementById('evTime').value='';
+  saveState(); renderAll();
+}
+
+function removeEvent(periodIdx, evIdx){
+  state.periods[periodIdx].splice(evIdx,1);
+  saveState(); renderAll();
+}
+
+function addPeriod(){
+  state.periods.push([]);
+  state.activePeriod = state.periods.length-1;
+  saveState(); renderAll();
+}
+
+function switchPeriod(idx){
+  state.activePeriod = idx;
+  renderAll();
+}
+
+function computeStats(){
+  const mapA = {}; state.rosterA.forEach(p=>mapA[p.id]={...p,g:0,a:0});
+  const mapB = {}; state.rosterB.forEach(p=>mapB[p.id]={...p,g:0,a:0});
+  state.periods.forEach(period=>{
+    period.forEach(ev=>{
+      if(ev.type!=='goal') return;
+      const map = ev.team==='A'? mapA : mapB;
+      if(map[ev.scorer]) map[ev.scorer].g++;
+      if(ev.assist1!=null && map[ev.assist1]) map[ev.assist1].a++;
+      if(ev.assist2!=null && map[ev.assist2]) map[ev.assist2].a++;
+    });
+  });
+  return {statsA: Object.values(mapA), statsB: Object.values(mapB)};
+}
+
+function computeScoreProgress(){
+  let a=0,b=0;
+  const perPeriodScores = state.periods.map(()=>({a:0,b:0}));
+  state.periods.forEach((period, pIdx)=>{
+    const goals = period.filter(e=>e.type==='goal').slice().sort((x,y)=>parseTime(x.time)-parseTime(y.time));
+    goals.forEach(g=>{
+      if(g.team==='A') a++; else b++;
+    });
+    perPeriodScores[pIdx] = {a, b};
+  });
+  return {total:{a,b}, perPeriodScores};
+}
+
+function scoreAtEvent(periodIdx, evTime){
+  let a=0,b=0;
+  for(let p=0;p<state.periods.length;p++){
+    const goals = state.periods[p].filter(e=>e.type==='goal').slice().sort((x,y)=>parseTime(x.time)-parseTime(y.time));
+    for(const g of goals){
+      if(p<periodIdx || (p===periodIdx && parseTime(g.time)<=parseTime(evTime))){
+        if(g.team==='A') a++; else b++;
+      }
+    }
+  }
+  return {a,b};
+}
+
+function renderRoster(team){
+  const roster = sortedRoster(team==='A'? state.rosterA : state.rosterB);
+  const {statsA, statsB} = computeStats();
+  const statsMap = {};
+  (team==='A'? statsA : statsB).forEach(s=>statsMap[s.id]=s);
+  const tbody = document.getElementById('rosterBody'+team);
+  tbody.innerHTML = roster.map(p=>{
+    const s = statsMap[p.id] || {g:0,a:0};
+    const numLabel = p.num ? p.num : 'б/н';
+    return `<tr>
+      <td class="num">${numLabel}</td>
+      <td class="pos">${p.pos}</td>
+      <td>${p.name}</td>
+      <td class="pts">${s.g}</td>
+      <td class="pts">${s.a}</td>
+      <td class="pts">${s.g+s.a}</td>
+      <td><button class="del-btn" onclick="removePlayer('${team}',${p.id})">✕</button></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="7" class="empty-note">Состав пуст — добавьте игроков ниже</td></tr>`;
+}
+
+function renderCoaches(team){
+  const list = team==='A'? state.coachesA : state.coachesB;
+  const el = document.getElementById('coachesList'+team);
+  el.innerHTML = list.map((c,i)=>`<div class="coach-line"><span><span class="role">${c.role}:</span>${c.name}</span><button class="del-btn" onclick="removeCoach('${team}',${i})">✕</button></div>`).join('') || `<div class="empty-note" style="padding:4px 0;">Тренеры не указаны</div>`;
+}
+
+function renderStats(){
+  const {statsA, statsB} = computeStats();
+  const render = (arr)=> arr
+    .filter(p=>p.g>0||p.a>0)
+    .sort((x,y)=> (y.g+y.a)-(x.g+x.a))
+    .map(p=>`<tr><td class="num">${p.num}</td><td>${p.name}</td><td class="pts">${p.g}</td><td class="pts">${p.a}</td><td class="pts">${p.g+p.a}</td></tr>`)
+    .join('') || `<tr><td colspan="5" class="empty-note">Нет результативных действий</td></tr>`;
+  document.getElementById('statsBodyA').innerHTML = render(statsA);
+  document.getElementById('statsBodyB').innerHTML = render(statsB);
+}
+
+function renderPeriodTabs(){
+  const tabs = document.getElementById('periodTabs');
+  tabs.innerHTML = state.periods.map((_,i)=>{
+    const label = i<3 ? `${i+1}-й период` : `ОТ${i-2>1?(' '+(i-2)):''}`;
+    return `<button class="period-tab ${i===state.activePeriod?'active':''}" onclick="switchPeriod(${i})">${label}</button>`;
+  }).join('');
+}
+
+function renderEvents(){
+  const list = document.getElementById('eventsList');
+  const period = state.periods[state.activePeriod] || [];
+  const sorted = period.map((ev,idx)=>({ev,idx})).sort((x,y)=>parseTime(x.ev.time)-parseTime(y.ev.time));
+  if(sorted.length===0){
+    list.innerHTML = `<div class="empty-note">В этом периоде пока нет событий</div>`;
+    return;
+  }
+  list.innerHTML = sorted.map(({ev,idx})=>{
+    const roster = ev.team==='A'? state.rosterA : state.rosterB;
+    const teamName = ev.team==='A'? state.teamA : state.teamB;
+    if(ev.type==='goal'){
+      const scorer = findPlayer(roster, ev.scorer) || {num:'?', name:'—'};
+      const a1 = ev.assist1!=null ? findPlayer(roster, ev.assist1) : null;
+      const a2 = ev.assist2!=null ? findPlayer(roster, ev.assist2) : null;
+      let assistText = '';
+      if(a1 || a2){
+        const parts = [a1, a2].filter(Boolean).map(p=>`${p.num ? p.num : 'б/н'} ${p.name}`);
+        assistText = `<span class="assist"> (${parts.join(', ')})</span>`;
+      }
+      const sc = scoreAtEvent(state.activePeriod, ev.time);
+      return `<div class="event-row">
+        <span class="time">${ev.time}</span>
+        <span class="bar ${ev.team}"></span>
+        <span class="desc"><b>${scorer.num ? scorer.num : 'б/н'} ${scorer.name}</b>${assistText} — ${teamName}</span>
+        <span class="after-score">${sc.a}:${sc.b}</span>
+        <button class="del-btn" onclick="removeEvent(${state.activePeriod},${idx})">✕</button>
+      </div>`;
+    } else {
+      const pl = findPlayer(roster, ev.player) || {num:'?', name:'—'};
+      return `<div class="event-row penalty">
+        <span class="time">${ev.time}</span>
+        <span class="bar ${ev.team}"></span>
+        <span class="desc"><b>${pl.num ? pl.num : 'б/н'} ${pl.name}</b>${ev.reason? ' ('+ev.reason+')':''} — ${teamName}</span>
+        <span class="after-score">${ev.minutes} мин</span>
+        <button class="del-btn" onclick="removeEvent(${state.activePeriod},${idx})">✕</button>
+      </div>`;
+    }
+  }).join('');
+}
+
+function renderScoreboard(){
+  const {total, perPeriodScores} = computeScoreProgress();
+  document.getElementById('scoreA').textContent = total.a;
+  document.getElementById('scoreB').textContent = total.b;
+  const line = perPeriodScores.map((s,i)=>{
+    const prev = i===0? {a:0,b:0} : perPeriodScores[i-1];
+    return `${s.a-prev.a}:${s.b-prev.b}`;
+  }).join('; ');
+  document.getElementById('periodScoresLine').textContent = perPeriodScores.length ? `(${line})` : '(—)';
+}
+
+function renderAll(){
+  document.getElementById('teamAName').value = state.teamA;
+  document.getElementById('teamBName').value = state.teamB;
+  document.getElementById('metaDate').value = state.meta.date;
+  document.getElementById('metaTime').value = state.meta.time;
+  document.getElementById('metaTour').value = state.meta.tour;
+  document.getElementById('metaArena').value = state.meta.arena;
+  document.getElementById('rosterTitleA').textContent = 'СОСТАВ: '+state.teamA;
+  document.getElementById('rosterTitleB').textContent = 'СОСТАВ: '+state.teamB;
+  document.getElementById('statsTitleA').textContent = state.teamA;
+  document.getElementById('statsTitleB').textContent = state.teamB;
+  document.getElementById('evTeam').innerHTML = `<option value="A">${state.teamA}</option><option value="B">${state.teamB}</option>`;
+
+  renderRoster('A');
+  renderRoster('B');
+  renderCoaches('A');
+  renderCoaches('B');
+  renderPeriodTabs();
+  renderEvents();
+  renderStats();
+  renderScoreboard();
+  refreshPlayerOptions();
+  setEventType(state.eventType);
+}
+
+['teamAName','teamBName'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', e=>{
+    if(id==='teamAName') state.teamA = e.target.value || 'Команда А';
+    else state.teamB = e.target.value || 'Команда Б';
+    saveState(); renderAll();
+  });
+});
+[['metaDate','date'],['metaTime','time'],['metaTour','tour'],['metaArena','arena']].forEach(([id,key])=>{
+  document.getElementById(id).addEventListener('input', e=>{
+    state.meta[key] = e.target.value;
+    saveState();
+  });
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(!confirm('Стереть все данные (составы и события)? Действие необратимо.')) return;
+  state = {
+    meta:{date:'', time:'', tour:'', arena:''},
+    teamA:'Команда А', teamB:'Команда Б',
+    rosterA: [], rosterB: [],
+    coachesA: [], coachesB: [],
+    periods: [ [], [], [] ],
+    eventType:'goal',
+    activePeriod:0
+  };
+  saveState(); renderAll();
+});
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'match-protocol.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+loadState();
+</script>
+</body>
+</html>
