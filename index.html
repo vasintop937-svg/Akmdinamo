@@ -488,7 +488,7 @@ function withIds(list){ return list.map(p => ({ id: nextId++, ...p })); }
 
 let state = {
   meta:{date:'', time:'', tour:'', arena:''},
-  teamA:'Ледяные львы', teamB:'Стрелка',
+  teamA:'Крылья Лобня', teamB:'Апрелевка',
   rosterA: [], rosterB: [],
   coachesA: [], coachesB: [],
   periods: [ [], [], [] ],
@@ -505,18 +505,39 @@ for(const key of ['lvy','strelka','zenit']){
   state.library[key] = { name:t.name, intro:t.intro, roster: withIds(t.roster), coaches: t.coaches.map(c=>({...c})) };
 }
 // по умолчанию в текущий матч загружаем Ледяные львы (А) и Стрелка (Б)
-state.rosterA = state.library['lvy'].roster.map(p=>({...p}));
-state.coachesA = state.library['lvy'].coaches.map(c=>({...c}));
-state.rosterB = state.library['strelka'].roster.map(p=>({...p}));
-state.coachesB = state.library['strelka'].coaches.map(c=>({...c}));
+state.rosterA = withIds([
+  {num:'1',  pos:'Вр', name:'Окладников Владимир Александрович'},
+  {num:'55', pos:'Вр', name:'Горосов Денис Игоревич'},
+  {num:'3',  pos:'Нап', name:'Абросимов Степан Андреевич'},
+  {num:'7',  pos:'Защ', name:'Казаев Арсений Дмитриевич'},
+  {num:'8',  pos:'Защ', name:'Загребельный Иван Александрович'},
+  {num:'10', pos:'Защ', name:'Иванов Мирослав Сергеевич'},
+  {num:'11', pos:'Нап', name:'Постарнак Марьяна Дмитриевна'},
+  {num:'17', pos:'Защ', name:'Гурьев Ярослав Владиславович'},
+  {num:'69', pos:'Защ', name:'Харламов Максим Андреевич (А)'},
+  {num:'71', pos:'Защ', name:'Усов Федор Дмитриевич'},
+  {num:'77', pos:'Нап', name:'Денисов Денис Артемович (К)'},
+  {num:'81', pos:'Защ', name:'Мягков Михаил Денисович'},
+  {num:'87', pos:'Нап', name:'Какалюк Максим Русланович'},
+  {num:'91', pos:'Нап', name:'Потемка Петр Андреевич'},
+  {num:'97', pos:'Нап', name:'Белаш Игорь Сергеевич'},
+  {num:'99', pos:'Нап', name:'Пупков Максим Дмитриевич (А)'}
+]);
+state.coachesA = [
+  {role:'Главный тренер', name:'Иванов Алексей Александрович'},
+  {role:'Тренер', name:'Бусаров Владислав Александрович'},
+  {role:'Тренер', name:'Володин Дмитрий Геннадиевич'}
+];
+state.rosterB = [];
+state.coachesB = [];
 
 const STORAGE_KEY = 'hockey-match-state';
 
 async function loadState(){
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      const loaded = JSON.parse(raw);
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(res && res.value){
+      const loaded = JSON.parse(res.value);
       state = Object.assign(state, loaded);
       if(!state.library) state.library = {};
       if(!state.libOrder) state.libOrder = Object.keys(state.library);
@@ -526,17 +547,17 @@ async function loadState(){
       const allIds = [...state.rosterA, ...state.rosterB].map(p=>p.id||0).concat(libIds);
       nextId = allIds.length ? Math.max(...allIds)+1 : nextId;
     } else {
-      saveState();
+      await saveState();
     }
   }catch(e){
-    saveState();
+    await saveState();
   }
   renderAll();
 }
 
-function saveState(){
+async function saveState(){
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
   }catch(e){
     console.error('Storage error', e);
   }
