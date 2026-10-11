@@ -117,6 +117,10 @@
   td.num{width:30px; color:var(--gold); font-weight:700;}
   td.pos{width:40px; color:var(--text-dim); font-size:12px;}
   td.pts{width:20px; text-align:center; color:var(--text-dim); font-size:12px;}
+  tr.player-row{cursor:pointer;}
+  tr.player-row:hover td{background:rgba(230,163,57,0.07);}
+  tr.player-row td.name-cell{position:relative;}
+  .bio-dot{display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--gold); margin-left:6px; vertical-align:middle;}
   .del-btn{
     background:none; border:none; color:#6a7c93; cursor:pointer; font-size:15px; padding:2px 6px;
     line-height:1;
@@ -137,6 +141,7 @@
   .btn:hover{filter:brightness(1.08);}
   .btn.secondary{background:transparent; border:1px solid var(--border); color:var(--ice); font-weight:600;}
   .btn.danger{background:transparent; border:1px solid var(--line-red); color:var(--line-red); font-weight:600;}
+  .btn.small{padding:5px 10px; font-size:12px;}
 
   .coaches-block{margin-top:12px; padding-top:10px; border-top:1px dashed var(--border);}
   .coaches-block h3{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;}
@@ -188,8 +193,39 @@
     .stats-grid th,.stats-grid td{padding:4px 2px;}
   }
 
-  .topbar{display:flex; justify-content:flex-end; gap:8px; margin-bottom:10px;}
+  .topbar{display:flex; justify-content:flex-end; gap:8px; margin-bottom:10px; flex-wrap:wrap;}
   .hint{color:var(--text-dim); font-size:12px; text-align:center; margin-top:-6px; margin-bottom:16px;}
+
+  /* library */
+  .lib-tabs{display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;}
+  .lib-tab{
+    background:#0f2038; border:1px solid var(--border); color:var(--text-dim);
+    padding:8px 14px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:700;
+  }
+  .lib-tab.active{background:var(--gold); color:#221602; border-color:var(--gold);}
+  .lib-intro{font-size:12px; color:var(--text-dim); line-height:1.5; margin-bottom:12px; padding:10px; background:#0f2038; border-radius:8px; border:1px solid var(--border);}
+  .lib-actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .new-team-row{display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;}
+  .new-team-row input{flex:1; min-width:140px; background:#0f2038; border:1px solid var(--border); color:var(--ice); border-radius:6px; padding:7px 8px; font-size:13px;}
+
+  /* bio modal */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(5,10,20,0.75); z-index:1000;
+    display:none; align-items:center; justify-content:center; padding:16px;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal-box{
+    background:var(--rink-2); border:1px solid var(--border); border-radius:12px;
+    padding:18px; max-width:420px; width:100%; max-height:85vh; overflow-y:auto;
+  }
+  .modal-box h3{font-size:18px; color:var(--gold); margin-bottom:2px;}
+  .modal-sub{color:var(--text-dim); font-size:12px; margin-bottom:12px;}
+  .modal-box textarea{
+    width:100%; min-height:140px; background:#0f2038; border:1px solid var(--border);
+    color:var(--ice); border-radius:8px; padding:10px; font-size:13px; font-family:inherit;
+    resize:vertical; line-height:1.5;
+  }
+  .modal-actions{display:flex; justify-content:space-between; gap:8px; margin-top:12px;}
 </style>
 </head>
 <body>
@@ -222,6 +258,32 @@
       </div>
     </div>
     <div class="period-scores" id="periodScoresLine">(—)</div>
+  </div>
+
+  <div class="card">
+    <h2>Библиотека команд</h2>
+    <div class="lib-tabs" id="libTabs"></div>
+    <div class="new-team-row">
+      <input id="newTeamName" type="text" placeholder="Название новой команды">
+      <button class="btn secondary small" onclick="addLibraryTeam()">+ Добавить команду</button>
+    </div>
+    <div id="libIntro"></div>
+    <table>
+      <thead><tr><th>№</th><th>Поз</th><th>Игрок</th><th></th></tr></thead>
+      <tbody id="libRosterBody"></tbody>
+    </table>
+    <div class="add-row" id="libAddRow"></div>
+    <div class="coaches-block">
+      <h3>Тренерский состав</h3>
+      <div id="libCoachesList"></div>
+      <div class="add-row coach" id="libAddCoachRow"></div>
+    </div>
+    <div class="lib-actions">
+      <button class="btn" onclick="loadIntoMatch('A')">Сделать командой А (текущий матч)</button>
+      <button class="btn" onclick="loadIntoMatch('B')">Сделать командой Б (текущий матч)</button>
+      <button class="btn danger small" onclick="removeLibraryTeam()">Удалить команду из библиотеки</button>
+    </div>
+    <p class="hint" style="margin-top:10px;">Клик по игроку — короткая справка о нём (для комментария в эфире).</p>
   </div>
 
   <div class="card rosters" style="background:none; border:none; padding:0;">
@@ -333,68 +395,120 @@
   <p class="hint">Данные сохраняются автоматически в этом окне. Нажмите «Экспорт JSON», чтобы сохранить копию себе на устройство.</p>
 </div>
 
+<div class="modal-backdrop" id="bioModal">
+  <div class="modal-box">
+    <h3 id="bioModalName">Игрок</h3>
+    <div class="modal-sub" id="bioModalSub">№ — позиция</div>
+    <textarea id="bioModalText" placeholder="Короткая справка об игроке для комментатора..."></textarea>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeBioModal()">Закрыть</button>
+      <button class="btn" onclick="saveBioModal()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
 <script>
-// --- начальные данные ---
-const initialRosterA = [
-  {num:'23', pos:'Вр', name:'Гонгладзе Григорий Тенгизович'},
-  {num:'30', pos:'Вр', name:'Рубанов Артем Дмитриевич'},
-  {num:'5',  pos:'Защ', name:'Лысов Александр Михайлович (А)'},
-  {num:'6',  pos:'Нап', name:'Горячкин Сергей Сергеевич'},
-  {num:'8',  pos:'Нап', name:'Зайцев Александр Сергеевич'},
-  {num:'11', pos:'Нап', name:'Лысов Артём Михайлович'},
-  {num:'15', pos:'Нап', name:'Кораблин Марк Дмитриевич'},
-  {num:'19', pos:'Защ', name:'Рева Артём Александрович'},
-  {num:'24', pos:'Защ', name:'Винцукевич Роман Дмитриевич'},
-  {num:'33', pos:'Нап', name:'Завьялов Михаил Алексеевич'},
-  {num:'37', pos:'Нап', name:'Кондрашов Василий Сергеевич'},
-  {num:'71', pos:'Нап', name:'Юркевич Николай Васильевич'},
-  {num:'77', pos:'Нап', name:'Радишевский Артём Сергеевич'},
-  {num:'88', pos:'Нап', name:'Титкин Константин Евгеньевич'},
-  {num:'92', pos:'Нап', name:'Ефимов Владислав Владимирович (А)'},
-  {num:'98', pos:'Защ', name:'Ардалионов Дмитрий Ильич'},
-  {num:'99', pos:'Защ', name:'Митерев Тихон Романович (К)'}
-];
-const initialCoachesA = [
-  {role:'Тренер', name:'Иванов Алексей Александрович'}
-];
-
-const initialRosterB = [
-  {num:'20', pos:'Вр', name:'Баранов Марат'},
-  {num:'31', pos:'Вр', name:'Ручкина Милана'},
-  {num:'2',  pos:'Защ', name:'Дементьев Илья'},
-  {num:'4',  pos:'Нап', name:'Гурьев Максим'},
-  {num:'5',  pos:'Нап', name:'Болотин Никита (К)'},
-  {num:'6',  pos:'Нап', name:'Соколова Дарья'},
-  {num:'7',  pos:'Нап', name:'Курьянов Дмитрий'},
-  {num:'9',  pos:'Нап', name:'Трусов Матвей'},
-  {num:'10', pos:'Нап', name:'Константинов Иван'},
-  {num:'11', pos:'Защ', name:'Танабаев Даниил'},
-  {num:'15', pos:'Нап', name:'Бабарцев Александр'},
-  {num:'16', pos:'Защ', name:'Михайлов Михаил'},
-  {num:'17', pos:'Защ', name:'Кузьменко Владимир'},
-  {num:'18', pos:'Нап', name:'Луконин Георгий'},
-  {num:'19', pos:'Защ', name:'Михеенков Тимофей (А)'}
-];
-const initialCoachesB = [];
-
-function withIds(list){
-  return list.map(p => ({ id: nextId++, ...p }));
-}
+/* ============ начальные данные библиотеки команд ============ */
+const initialLibrary = {
+  strelka: {
+    name: 'Стрелка',
+    intro: '«Стрелка» — первая команда по специальному хоккею в Нижегородской области, образована в ноябре 2022 года в Нижнем Новгороде. Название связано с местом слияния рек Ока и Волга. В команде тренируются 22 игрока от 6 до 26 лет с различными ментальными нарушениями, занятия проходят на базе ФОК «Юность».',
+    roster: [
+      {num:'28', pos:'Вр', name:'Корчагин Павел', bio:'12 лет. Легендарный «Павел Сергеевич» — лучший вратарь для своего возраста. Занимается футболом, где также является вратарём, а ещё занимается танцами.'},
+      {num:'1',  pos:'Защ', name:'Яблоков Дмитрий', bio:'16 лет. Катается на коньках с 5 лет, в спец-хоккее уже 3 года. Кроме хоккея занимается плаванием и очень любит путешествовать.'},
+      {num:'5',  pos:'Нап', name:'Кальянов Ярослав', bio:'11 лет. 2 года назад не умел кататься на коньках, а сейчас уже забивает шайбы на турнирах. Также занимается футболом и баскетболом.'},
+      {num:'11', pos:'Защ', name:'Точилин Кирилл', bio:'12 лет. Пришёл в команду 2 года назад, в самом начале не мог даже стоять на коньках. Также занимается каратэ и баскетболом.'},
+      {num:'13', pos:'Защ', name:'Погодин Тимофей', bio:'16 лет. Занимается хоккеем давно, болеет за нижегородское «Торпедо», любит путешествия. Любимая передача — «Песни от всей души» Андрея Малахова.'},
+      {num:'18', pos:'Нап', name:'Прончатов Сергей', bio:'13 лет. Пришёл в хоккей 2 года назад. Также любит плавание и посещает секцию баскетбола.'},
+      {num:'21', pos:'Защ', name:'Чеченин Кирилл', bio:'16 лет. Занимается хоккеем с 12 лет, готов ходить на тренировку каждый день. Любит компьютерные игры.'},
+      {num:'27', pos:'Нап', name:'Субботин Борис', bio:'16 лет. Пришёл в хоккей, как только возникла команда. Увлекается рисованием, мечтает полетать на вертолёте. Занимается скалолазанием и историческим фехтованием.'},
+      {num:'50', pos:'Нап', name:'Гречухов Николай', bio:'11 лет. На коньках с 5 лет, хоккеем занимается с 2024 года, также посещает флорбол и плавание. Учится в музыкальной школе по классу фортепиано.'},
+      {num:'52', pos:'Защ', name:'Шестаков Вадим', bio:'14 лет. Пришёл в хоккей недавно, только в этом сезоне. Также занимается плаванием, любит компьютерные игры.'},
+      {num:'64', pos:'Защ', name:'Лухнов Максим', bio:'13 лет. В команде только с этого года, любит бадминтон, настольный теннис и отлично плавает.'},
+      {num:'98', pos:'Защ', name:'Ухалов Никита', bio:'7 лет. В команде с самого начала, самый младший, но прыткий игрок. Любит лошадей, занимается конным спортом, болеет за родное «Торпедо».'}
+    ],
+    coaches: [
+      {role:'Тренер', name:'Фомин Данила Сергеевич'},
+      {role:'Координатор', name:'Шульпина Екатерина Фёдоровна'}
+    ]
+  },
+  lvy: {
+    name: 'Ледяные львы',
+    intro: '«Ледяные львы» — адаптивная команда по специальному хоккею из Москвы. В команде занимаются ребята, для которых спорт — способ стать сильнее не только физически, но и внутренне. Тренировки выстроены так, чтобы нагрузка была понятной, а техника безопасной.',
+    roster: [
+      {num:'1',  pos:'Вр', name:'Семеновых Александр', bio:'Надёжный страж на защите ворот.'},
+      {num:'2',  pos:'Защ', name:'Абрамова Кристина', bio:'Синяя линия всегда под её надёжным контролем.'},
+      {num:'3',  pos:'Нап', name:'Шувалова Алёна', bio:'Наша звёздочка с клюшкой — хоккей ей идеально подошёл.'},
+      {num:'7',  pos:'Нап', name:'Богомолов Алексей', bio:'У самых истоков команды, в хоккее с трёх лет.'},
+      {num:'9',  pos:'Нап', name:'Зобков Фёдор', bio:'Скоростной и результативный.'},
+      {num:'13', pos:'Нап', name:'Ахундов Эмин', bio:'Бессменный лидер первой пятёрки.'},
+      {num:'14', pos:'Защ', name:'Кириллов Григорий', bio:'Самый юный участник команды, очаровывает на льду и за его пределами.'},
+      {num:'15', pos:'Нап', name:'Кляузов Вячеслав', bio:'Открытие сезона, лихо ворвался в лидерские ряды.'},
+      {num:'18', pos:'Защ', name:'Герега Максим', bio:'Раскрывается и набирает ход от турнира к турниру.'},
+      {num:'28', pos:'Защ', name:'Ханхатов Максим', bio:'Всегда в движении к большой цели.'},
+      {num:'57', pos:'Защ', name:'Харьков Владислав', bio:'Набрал обороты и идёт вперёд за мечтой.'},
+      {num:'81', pos:'Защ', name:'Артёмов Андрей', bio:'Растёт на глазах и выкладывается на все сто.'},
+      {num:'87', pos:'Нап', name:'Спиридонов Михаил', bio:'Мастер буллитов.'},
+      {num:'88', pos:'Защ', name:'Тюрин Ярослав', bio:'Не пропустил ни одного турнира.'},
+      {num:'96', pos:'Защ', name:'Якунин Мирон', bio:'Стремится к шайбе всегда и везде.'}
+    ],
+    coaches: [
+      {role:'Главный тренер', name:'Гостюхин Борис Анатольевич'},
+      {role:'Координатор', name:'Богомолова Дарья Васильевна'}
+    ]
+  },
+  zenit: {
+    name: 'Зенит Красногорск',
+    intro: '',
+    roster: [
+      {num:'1',  pos:'Вр', name:'Лямасов Тимофей (А)', bio:'В хоккей попал случайно, сначала был полевым игроком и очень переживал, когда перевели в роль вратаря — амуниция тяжёлая и неудобная. Сейчас доволен своей ролью, с радостью едет на тренировки и турниры. Помимо хоккея занимается плаванием и игрой на барабанной установке, ну и компьютерными играми.'},
+      {num:'5',  pos:'Нап', name:'Иванютин Ярослав (К)', bio:'14 лет. Капитан команды. Любит всё, что связано с компьютерами, хочет стать программистом и разработчиком игр. В спецхоккее третий год. Девиз по жизни — «Хоккей ошибок не прощает!».'},
+      {num:'7',  pos:'',    name:'Илиади Николь', bio:'7 лет. Любит лёд больше, чем мультики, и свои коньки не снимает даже дома. Пока только учится владеть клюшкой, но с большим удовольствием.'},
+      {num:'9',  pos:'Защ', name:'Лялин Михаил', bio:'Ходит в 1 класс. Занимается в бассейне, умеет хорошо нырять. Очень любит книги.'},
+      {num:'10', pos:'Защ', name:'Симкина Дарья', bio:'15 лет. Уже третий год занимается хоккеем, с удовольствием участвует во всех активностях команды и рано встаёт на тренировки. Любит музыку и оперное пение, ходит в кино и рисует, в свободное время снимает пластилиновые мультфильмы.'},
+      {num:'17', pos:'Нап', name:'Лялин Максим', bio:'Учится во 2 классе. Очень любит бассейн и умеет плавать кролем. Мастерит поделки из пластилина.'},
+      {num:'19', pos:'Защ', name:'Шишков Никита', bio:'Занимается хоккеем второй год и теперь ждёт каждую тренировку. Увлечения: батут, скалодром, велосипед, карате, лыжи; очень любит париться в бане и купаться в море.'},
+      {num:'52', pos:'Нап', name:'Иванютина Алёна', bio:'12 лет. Чего только ни пробовала — танцы, карате, конный спорт, театральная студия, дворовый футбол — но настоящая любовь к спорту пришла вместе с хоккеем. Готова быть на льду 24 часа в сутки.'},
+      {num:'70', pos:'Защ', name:'Вербицкая Виктория', bio:'Ценит друзей и свою команду, которая стала второй семьёй. Честно добивается своих целей, любит классическую музыку.'},
+      {num:'77', pos:'Защ', name:'Ротару София', bio:'7 лет. Увлекается хоккеем, футболом, баскетболом, собиранием пазлов. За два года в хоккее сделала большие успехи и в спорте, и в личном плане — день тренировок теперь самый ожидаемый день недели.'},
+      {num:'11', pos:'Защ', name:'Соколов Никита', bio:'Занимается всеми активностями: батут, скалодром, плавание в бассейне. В восторге от лагеря «Школа героев», где проводит время с вожатыми и ребятами каждую смену.'},
+      {num:'33', pos:'Защ', name:'Мельничук Елисей', bio:'7 лет. Мечтает стать чемпионом. Увлекается хоккеем, футболом, баскетболом, собиранием пазлов.'},
+      {num:'92', pos:'Нап', name:'Михайлов Артем (А)', bio:''}
+    ],
+    coaches: [
+      {role:'Главный тренер', name:'Марченко Мария Александровна'},
+      {role:'Тренер', name:'Зуев Никита Андреевич'},
+      {role:'Координатор', name:'Симкина Анна Александровна'}
+    ]
+  }
+};
 
 let nextId = 1;
+function withIds(list){ return list.map(p => ({ id: nextId++, ...p })); }
 
 let state = {
   meta:{date:'', time:'', tour:'', arena:''},
-  teamA:'Крылья Лобня', teamB:'Коломна',
+  teamA:'Ледяные львы', teamB:'Стрелка',
   rosterA: [], rosterB: [],
-  coachesA: initialCoachesA.map(c=>({...c})),
-  coachesB: initialCoachesB.map(c=>({...c})),
+  coachesA: [], coachesB: [],
   periods: [ [], [], [] ],
   eventType:'goal',
-  activePeriod:0
+  activePeriod:0,
+  library: {},
+  libOrder: ['lvy','strelka','zenit'],
+  activeLibTab: 'lvy'
 };
-state.rosterA = withIds(initialRosterA);
-state.rosterB = withIds(initialRosterB);
+
+// заполнить библиотеку
+for(const key of ['lvy','strelka','zenit']){
+  const t = initialLibrary[key];
+  state.library[key] = { name:t.name, intro:t.intro, roster: withIds(t.roster), coaches: t.coaches.map(c=>({...c})) };
+}
+// по умолчанию в текущий матч загружаем Ледяные львы (А) и Стрелка (Б)
+state.rosterA = state.library['lvy'].roster.map(p=>({...p}));
+state.coachesA = state.library['lvy'].coaches.map(c=>({...c}));
+state.rosterB = state.library['strelka'].roster.map(p=>({...p}));
+state.coachesB = state.library['strelka'].coaches.map(c=>({...c}));
 
 const STORAGE_KEY = 'hockey-match-state';
 
@@ -404,7 +518,12 @@ async function loadState(){
     if(raw){
       const loaded = JSON.parse(raw);
       state = Object.assign(state, loaded);
-      const allIds = [...state.rosterA, ...state.rosterB].map(p=>p.id||0);
+      if(!state.library) state.library = {};
+      if(!state.libOrder) state.libOrder = Object.keys(state.library);
+      if(!state.activeLibTab) state.activeLibTab = state.libOrder[0] || null;
+      const libIds = [];
+      Object.values(state.library).forEach(t=>t.roster.forEach(p=>libIds.push(p.id||0)));
+      const allIds = [...state.rosterA, ...state.rosterB].map(p=>p.id||0).concat(libIds);
       nextId = allIds.length ? Math.max(...allIds)+1 : nextId;
     } else {
       saveState();
@@ -430,7 +549,6 @@ function parseTime(t){
   return parts[0]||0;
 }
 
-// сортировка для отображения: вратари сверху, дальше по возрастанию номера
 function sortedRoster(roster){
   return roster.slice().sort((a,b)=>{
     const goalieA = a.pos==='Вр' ? 0 : 1;
@@ -447,6 +565,7 @@ function findPlayer(roster, id){
   return roster.find(p=>p.id===id);
 }
 
+/* ============ состав А / Б (текущий матч) ============ */
 function addPlayer(team){
   const numEl = document.getElementById('addNum'+team);
   const posEl = document.getElementById('addPos'+team);
@@ -454,7 +573,7 @@ function addPlayer(team){
   const name = nameEl.value.trim();
   if(!name){ nameEl.focus(); return; }
   const roster = team==='A'? state.rosterA : state.rosterB;
-  roster.push({id: nextId++, num: numEl.value.trim() || '-', pos: posEl.value, name: name});
+  roster.push({id: nextId++, num: numEl.value.trim() || '-', pos: posEl.value, name: name, bio:''});
   numEl.value=''; nameEl.value='';
   saveState(); renderAll();
 }
@@ -483,6 +602,133 @@ function removeCoach(team, idx){
   saveState(); renderAll();
 }
 
+/* ============ библиотека команд ============ */
+function addLibraryTeam(){
+  const input = document.getElementById('newTeamName');
+  const name = input.value.trim();
+  if(!name) { input.focus(); return; }
+  const key = 'team_'+Date.now();
+  state.library[key] = { name, intro:'', roster:[], coaches:[] };
+  state.libOrder.push(key);
+  state.activeLibTab = key;
+  input.value='';
+  saveState(); renderAll();
+}
+
+function removeLibraryTeam(){
+  const key = state.activeLibTab;
+  if(!key || !state.library[key]) return;
+  if(!confirm('Удалить команду «'+state.library[key].name+'» из библиотеки?')) return;
+  delete state.library[key];
+  state.libOrder = state.libOrder.filter(k=>k!==key);
+  state.activeLibTab = state.libOrder[0] || null;
+  saveState(); renderAll();
+}
+
+function switchLibTab(key){
+  state.activeLibTab = key;
+  renderAll();
+}
+
+function addLibraryPlayer(){
+  const key = state.activeLibTab;
+  if(!key) return;
+  const numEl = document.getElementById('libAddNum');
+  const posEl = document.getElementById('libAddPos');
+  const nameEl = document.getElementById('libAddName');
+  const name = nameEl.value.trim();
+  if(!name){ nameEl.focus(); return; }
+  state.library[key].roster.push({id: nextId++, num: numEl.value.trim() || '-', pos: posEl.value, name: name, bio:''});
+  numEl.value=''; nameEl.value='';
+  saveState(); renderAll();
+}
+
+function removeLibraryPlayer(id){
+  const key = state.activeLibTab;
+  if(!key) return;
+  const roster = state.library[key].roster;
+  const idx = roster.findIndex(p=>p.id===id);
+  if(idx>-1) roster.splice(idx,1);
+  saveState(); renderAll();
+}
+
+function addLibraryCoach(){
+  const key = state.activeLibTab;
+  if(!key) return;
+  const roleEl = document.getElementById('libAddCoachRole');
+  const nameEl = document.getElementById('libAddCoachName');
+  const name = nameEl.value.trim();
+  if(!name){ nameEl.focus(); return; }
+  state.library[key].coaches.push({role: roleEl.value, name});
+  nameEl.value='';
+  saveState(); renderAll();
+}
+
+function removeLibraryCoach(idx){
+  const key = state.activeLibTab;
+  if(!key) return;
+  state.library[key].coaches.splice(idx,1);
+  saveState(); renderAll();
+}
+
+function loadIntoMatch(slot){
+  const key = state.activeLibTab;
+  if(!key || !state.library[key]) return;
+  if(!confirm('Загрузить «'+state.library[key].name+'» в команду '+slot+'? Текущий счёт и события матча будут очищены.')) return;
+  const t = state.library[key];
+  const clonedRoster = JSON.parse(JSON.stringify(t.roster));
+  const clonedCoaches = JSON.parse(JSON.stringify(t.coaches));
+  if(slot==='A'){
+    state.teamA = t.name; state.rosterA = clonedRoster; state.coachesA = clonedCoaches;
+  } else {
+    state.teamB = t.name; state.rosterB = clonedRoster; state.coachesB = clonedCoaches;
+  }
+  state.periods = [ [], [], [] ];
+  state.activePeriod = 0;
+  saveState(); renderAll();
+}
+
+/* ============ справка об игроке (модалка) ============ */
+let bioCtx = null; // {scope: 'A'|'B'|libKey, id}
+
+function openBioModal(scope, id){
+  let roster;
+  if(scope==='A') roster = state.rosterA;
+  else if(scope==='B') roster = state.rosterB;
+  else roster = state.library[scope] ? state.library[scope].roster : [];
+  const p = findPlayer(roster, id);
+  if(!p) return;
+  bioCtx = {scope, id};
+  document.getElementById('bioModalName').textContent = p.name;
+  document.getElementById('bioModalSub').textContent = '№ '+(p.num||'б/н')+' · '+(p.pos||'—');
+  document.getElementById('bioModalText').value = p.bio || '';
+  document.getElementById('bioModal').classList.add('open');
+}
+
+function closeBioModal(){
+  document.getElementById('bioModal').classList.remove('open');
+  bioCtx = null;
+}
+
+function saveBioModal(){
+  if(!bioCtx) return;
+  let roster;
+  if(bioCtx.scope==='A') roster = state.rosterA;
+  else if(bioCtx.scope==='B') roster = state.rosterB;
+  else roster = state.library[bioCtx.scope] ? state.library[bioCtx.scope].roster : [];
+  const p = findPlayer(roster, bioCtx.id);
+  if(p){
+    p.bio = document.getElementById('bioModalText').value;
+    saveState(); renderAll();
+  }
+  closeBioModal();
+}
+
+document.getElementById('bioModal').addEventListener('click', (e)=>{
+  if(e.target.id==='bioModal') closeBioModal();
+});
+
+/* ============ события матча ============ */
 function setEventType(type){
   state.eventType = type;
   document.getElementById('typeGoalBtn').classList.toggle('active', type==='goal');
@@ -590,6 +836,7 @@ function scoreAtEvent(periodIdx, evTime){
   return {a,b};
 }
 
+/* ============ рендеринг ============ */
 function renderRoster(team){
   const roster = sortedRoster(team==='A'? state.rosterA : state.rosterB);
   const {statsA, statsB} = computeStats();
@@ -599,14 +846,15 @@ function renderRoster(team){
   tbody.innerHTML = roster.map(p=>{
     const s = statsMap[p.id] || {g:0,a:0};
     const numLabel = p.num ? p.num : 'б/н';
-    return `<tr>
+    const dot = p.bio ? '<span class="bio-dot"></span>' : '';
+    return `<tr class="player-row" onclick="openBioModal('${team}',${p.id})">
       <td class="num">${numLabel}</td>
       <td class="pos">${p.pos}</td>
-      <td>${p.name}</td>
+      <td class="name-cell">${p.name}${dot}</td>
       <td class="pts">${s.g}</td>
       <td class="pts">${s.a}</td>
       <td class="pts">${s.g+s.a}</td>
-      <td><button class="del-btn" onclick="removePlayer('${team}',${p.id})">✕</button></td>
+      <td><button class="del-btn" onclick="event.stopPropagation(); removePlayer('${team}',${p.id})">✕</button></td>
     </tr>`;
   }).join('') || `<tr><td colspan="7" class="empty-note">Состав пуст — добавьте игроков ниже</td></tr>`;
 }
@@ -688,6 +936,64 @@ function renderScoreboard(){
   document.getElementById('periodScoresLine').textContent = perPeriodScores.length ? `(${line})` : '(—)';
 }
 
+function renderLibrary(){
+  const tabsEl = document.getElementById('libTabs');
+  tabsEl.innerHTML = state.libOrder.map(key=>{
+    const t = state.library[key];
+    if(!t) return '';
+    return `<button class="lib-tab ${key===state.activeLibTab?'active':''}" onclick="switchLibTab('${key}')">${t.name}</button>`;
+  }).join('');
+
+  const key = state.activeLibTab;
+  const introEl = document.getElementById('libIntro');
+  const bodyEl = document.getElementById('libRosterBody');
+  const addRowEl = document.getElementById('libAddRow');
+  const coachesEl = document.getElementById('libCoachesList');
+  const addCoachRowEl = document.getElementById('libAddCoachRow');
+
+  if(!key || !state.library[key]){
+    introEl.innerHTML = '';
+    bodyEl.innerHTML = `<tr><td colspan="4" class="empty-note">Добавьте команду выше</td></tr>`;
+    addRowEl.innerHTML = '';
+    coachesEl.innerHTML = '';
+    addCoachRowEl.innerHTML = '';
+    return;
+  }
+  const t = state.library[key];
+  introEl.innerHTML = t.intro ? `<div class="lib-intro">${t.intro}</div>` : '';
+  const roster = sortedRoster(t.roster);
+  bodyEl.innerHTML = roster.map(p=>{
+    const numLabel = p.num ? p.num : 'б/н';
+    const dot = p.bio ? '<span class="bio-dot"></span>' : '';
+    return `<tr class="player-row" onclick="openBioModal('${key}',${p.id})">
+      <td class="num">${numLabel}</td>
+      <td class="pos">${p.pos}</td>
+      <td class="name-cell">${p.name}${dot}</td>
+      <td><button class="del-btn" onclick="event.stopPropagation(); removeLibraryPlayer(${p.id})">✕</button></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="4" class="empty-note">Состав пуст</td></tr>`;
+
+  addRowEl.innerHTML = `
+    <input class="num-in" id="libAddNum" type="text" placeholder="№">
+    <select class="pos-in" id="libAddPos">
+      <option value="Вр">Вр</option><option value="Защ">Защ</option><option value="Нап" selected>Нап</option>
+    </select>
+    <input class="name-in" id="libAddName" type="text" placeholder="Фамилия Имя">
+    <button class="btn" onclick="addLibraryPlayer()">Добавить</button>
+  `;
+
+  coachesEl.innerHTML = t.coaches.map((c,i)=>`<div class="coach-line"><span><span class="role">${c.role}:</span>${c.name}</span><button class="del-btn" onclick="removeLibraryCoach(${i})">✕</button></div>`).join('') || `<div class="empty-note" style="padding:4px 0;">Тренеры не указаны</div>`;
+  addCoachRowEl.innerHTML = `
+    <select id="libAddCoachRole">
+      <option value="Главный тренер">Главный тренер</option>
+      <option value="Тренер">Тренер</option>
+      <option value="Координатор">Координатор</option>
+    </select>
+    <input class="name-in" id="libAddCoachName" type="text" placeholder="ФИО">
+    <button class="btn" onclick="addLibraryCoach()">Добавить</button>
+  `;
+}
+
 function renderAll(){
   document.getElementById('teamAName').value = state.teamA;
   document.getElementById('teamBName').value = state.teamB;
@@ -701,6 +1007,7 @@ function renderAll(){
   document.getElementById('statsTitleB').textContent = state.teamB;
   document.getElementById('evTeam').innerHTML = `<option value="A">${state.teamA}</option><option value="B">${state.teamB}</option>`;
 
+  renderLibrary();
   renderRoster('A');
   renderRoster('B');
   renderCoaches('A');
@@ -736,7 +1043,7 @@ document.getElementById('newGameBtn').addEventListener('click', ()=>{
 });
 
 document.getElementById('resetBtn').addEventListener('click', ()=>{
-  if(!confirm('Стереть все данные (составы и события)? Действие необратимо.')) return;
+  if(!confirm('Стереть все данные (составы, библиотеку команд и события)? Действие необратимо.')) return;
   state = {
     meta:{date:'', time:'', tour:'', arena:''},
     teamA:'Команда А', teamB:'Команда Б',
@@ -744,7 +1051,10 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
     coachesA: [], coachesB: [],
     periods: [ [], [], [] ],
     eventType:'goal',
-    activePeriod:0
+    activePeriod:0,
+    library: {},
+    libOrder: [],
+    activeLibTab: null
   };
   saveState(); renderAll();
 });
