@@ -480,6 +480,63 @@ const initialLibrary = {
       {role:'Тренер', name:'Зуев Никита Андреевич'},
       {role:'Координатор', name:'Симкина Анна Александровна'}
     ]
+  },
+  kryllia2014: {
+    name: 'Крылья Лобня 2014',
+    intro: '',
+    roster: [
+      {num:'23', pos:'Вр', name:'Гонгладзе Григорий Тенгизович'},
+      {num:'30', pos:'Вр', name:'Рубанов Артем Дмитриевич'},
+      {num:'5',  pos:'Защ', name:'Лысов Александр Михайлович (А)'},
+      {num:'6',  pos:'Нап', name:'Горячкин Сергей Сергеевич'},
+      {num:'8',  pos:'Нап', name:'Зайцев Александр Сергеевич'},
+      {num:'11', pos:'Нап', name:'Лысов Артём Михайлович'},
+      {num:'15', pos:'Нап', name:'Кораблин Марк Дмитриевич'},
+      {num:'19', pos:'Защ', name:'Рева Артём Александрович'},
+      {num:'24', pos:'Защ', name:'Винцукевич Роман Дмитриевич'},
+      {num:'33', pos:'Нап', name:'Завьялов Михаил Алексеевич'},
+      {num:'71', pos:'Нап', name:'Юркевич Николай Васильевич'},
+      {num:'77', pos:'Нап', name:'Радишевский Артём Сергеевич'},
+      {num:'88', pos:'Нап', name:'Титкин Константин Евгеньевич'},
+      {num:'92', pos:'Нап', name:'Ефимов Владислав Владимирович (А)'},
+      {num:'98', pos:'Защ', name:'Ардалионов Дмитрий Ильич'},
+      {num:'99', pos:'Защ', name:'Митерев Тихон Романович (К)'}
+    ],
+    coaches: [
+      {role:'Главный тренер', name:'Сабуров Александр Константинович'},
+      {role:'Тренер', name:'Бусаров Владислав Александрович'},
+      {role:'Тренер', name:'Иванов Алексей Александрович'},
+      {role:'Тренер', name:'Володин Дмитрий Геннадиевич'}
+    ]
+  },
+  dragun2014: {
+    name: 'Драгуны Можайск 2014',
+    intro: '',
+    roster: [
+      {num:'1',  pos:'Вр', name:'Новиков Артемий'},
+      {num:'25', pos:'Защ', name:'Сажнов Ярослав'},
+      {num:'2',  pos:'Защ', name:'Самохин Роман'},
+      {num:'4',  pos:'Нап', name:'Савельев Тимофей'},
+      {num:'5',  pos:'Нап', name:'Дмитриев Макар (А)'},
+      {num:'7',  pos:'Защ', name:'Васильев Лев'},
+      {num:'8',  pos:'Нап', name:'Новиков Роман (К)'},
+      {num:'9',  pos:'Нап', name:'Кузьмичев Александр'},
+      {num:'10', pos:'Нап', name:'Наумченков Александр'},
+      {num:'11', pos:'Защ', name:'Кравец Иван'},
+      {num:'12', pos:'Защ', name:'Сеноков Макар'},
+      {num:'13', pos:'Нап', name:'Нитрпов Арсений (А)'},
+      {num:'14', pos:'Нап', name:'Фёдоров Олег'},
+      {num:'15', pos:'Нап', name:'Бондарь Егор'},
+      {num:'28', pos:'Защ', name:'Симонов Тимофей'},
+      {num:'35', pos:'Защ', name:'Звонарева Таисия'},
+      {num:'72', pos:'Нап', name:'Яковлева Макар'},
+      {num:'74', pos:'Защ', name:'Лозбенева Алёна'},
+      {num:'88', pos:'Нап', name:'Банников Елисей'},
+      {num:'91', pos:'Нап', name:'Яничев Мирон'},
+      {num:'94', pos:'Защ', name:'Сурина София'},
+      {num:'34', pos:'Нап', name:'Кондаков Евгений'}
+    ],
+    coaches: []
   }
 };
 
@@ -488,56 +545,35 @@ function withIds(list){ return list.map(p => ({ id: nextId++, ...p })); }
 
 let state = {
   meta:{date:'', time:'', tour:'', arena:''},
-  teamA:'Крылья Лобня', teamB:'Апрелевка',
+  teamA:'Крылья Лобня 2014', teamB:'Драгуны Можайск 2014',
   rosterA: [], rosterB: [],
   coachesA: [], coachesB: [],
   periods: [ [], [], [] ],
   eventType:'goal',
   activePeriod:0,
   library: {},
-  libOrder: ['lvy','strelka','zenit'],
-  activeLibTab: 'lvy'
+  libOrder: ['kryllia2014','dragun2014','lvy','strelka','zenit'],
+  activeLibTab: 'kryllia2014'
 };
 
 // заполнить библиотеку
-for(const key of ['lvy','strelka','zenit']){
+for(const key of state.libOrder){
   const t = initialLibrary[key];
   state.library[key] = { name:t.name, intro:t.intro, roster: withIds(t.roster), coaches: t.coaches.map(c=>({...c})) };
 }
-// по умолчанию в текущий матч загружаем Ледяные львы (А) и Стрелка (Б)
-state.rosterA = withIds([
-  {num:'1',  pos:'Вр', name:'Окладников Владимир Александрович'},
-  {num:'55', pos:'Вр', name:'Горосов Денис Игоревич'},
-  {num:'3',  pos:'Нап', name:'Абросимов Степан Андреевич'},
-  {num:'7',  pos:'Защ', name:'Казаев Арсений Дмитриевич'},
-  {num:'8',  pos:'Защ', name:'Загребельный Иван Александрович'},
-  {num:'10', pos:'Защ', name:'Иванов Мирослав Сергеевич'},
-  {num:'11', pos:'Нап', name:'Постарнак Марьяна Дмитриевна'},
-  {num:'17', pos:'Защ', name:'Гурьев Ярослав Владиславович'},
-  {num:'69', pos:'Защ', name:'Харламов Максим Андреевич (А)'},
-  {num:'71', pos:'Защ', name:'Усов Федор Дмитриевич'},
-  {num:'77', pos:'Нап', name:'Денисов Денис Артемович (К)'},
-  {num:'81', pos:'Защ', name:'Мягков Михаил Денисович'},
-  {num:'87', pos:'Нап', name:'Какалюк Максим Русланович'},
-  {num:'91', pos:'Нап', name:'Потемка Петр Андреевич'},
-  {num:'97', pos:'Нап', name:'Белаш Игорь Сергеевич'},
-  {num:'99', pos:'Нап', name:'Пупков Максим Дмитриевич (А)'}
-]);
-state.coachesA = [
-  {role:'Главный тренер', name:'Иванов Алексей Александрович'},
-  {role:'Тренер', name:'Бусаров Владислав Александрович'},
-  {role:'Тренер', name:'Володин Дмитрий Геннадиевич'}
-];
-state.rosterB = [];
-state.coachesB = [];
+// по умолчанию в текущий матч загружаем Крылья Лобня 2014 (А) и Драгуны Можайск 2014 (Б)
+state.rosterA = state.library['kryllia2014'].roster.map(p=>({...p}));
+state.coachesA = state.library['kryllia2014'].coaches.map(c=>({...c}));
+state.rosterB = state.library['dragun2014'].roster.map(p=>({...p}));
+state.coachesB = state.library['dragun2014'].coaches.map(c=>({...c}));
 
 const STORAGE_KEY = 'hockey-match-state';
 
 async function loadState(){
   try{
-    const res = await window.storage.get(STORAGE_KEY, false);
-    if(res && res.value){
-      const loaded = JSON.parse(res.value);
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const loaded = JSON.parse(raw);
       state = Object.assign(state, loaded);
       if(!state.library) state.library = {};
       if(!state.libOrder) state.libOrder = Object.keys(state.library);
@@ -547,17 +583,17 @@ async function loadState(){
       const allIds = [...state.rosterA, ...state.rosterB].map(p=>p.id||0).concat(libIds);
       nextId = allIds.length ? Math.max(...allIds)+1 : nextId;
     } else {
-      await saveState();
+      saveState();
     }
   }catch(e){
-    await saveState();
+    saveState();
   }
   renderAll();
 }
 
-async function saveState(){
+function saveState(){
   try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }catch(e){
     console.error('Storage error', e);
   }
