@@ -537,6 +537,35 @@ const initialLibrary = {
       {num:'34', pos:'Нап', name:'Кондаков Евгений'}
     ],
     coaches: []
+  },
+  metallist2014: {
+    name: 'СШОР Металлист',
+    intro: '',
+    roster: [
+      {num:'30', pos:'Вр', name:'Новиков Всеволод'},
+      {num:'89', pos:'Вр', name:'Пронин Егор'},
+      {num:'2',  pos:'Нап', name:'Мареев Иван (А)'},
+      {num:'3',  pos:'Защ', name:'Князькин Ярослав'},
+      {num:'4',  pos:'Нап', name:'Бабин Артём'},
+      {num:'5',  pos:'Нап', name:'Байков Владимир'},
+      {num:'7',  pos:'Нап', name:'Сабинин Иван'},
+      {num:'10', pos:'Защ', name:'Свиридов Кирилл'},
+      {num:'12', pos:'Нап', name:'Леденёв Лев'},
+      {num:'17', pos:'Защ', name:'Васильев Юрий'},
+      {num:'19', pos:'Нап', name:'Калинов Александр'},
+      {num:'33', pos:'Нап', name:'Уткин Георгий (К)'},
+      {num:'44', pos:'Защ', name:'Ращихин Егор'},
+      {num:'76', pos:'Защ', name:'Шилов Роман'},
+      {num:'77', pos:'Защ', name:'Подрядов Николай'},
+      {num:'79', pos:'Нап', name:'Крюченков Александр'},
+      {num:'91', pos:'Защ', name:'Мякинин Никита'},
+      {num:'96', pos:'Нап', name:'Дроздов Архип (А)'},
+      {num:'99', pos:'Нап', name:'Белик Максим'}
+    ],
+    coaches: [
+      {role:'Тренер', name:'Мутных Владислав Юрьевич'},
+      {role:'Тренер', name:'Костюк Дмитрий Львович'}
+    ]
   }
 };
 
@@ -545,15 +574,15 @@ function withIds(list){ return list.map(p => ({ id: nextId++, ...p })); }
 
 let state = {
   meta:{date:'', time:'', tour:'', arena:''},
-  teamA:'Крылья Лобня 2014', teamB:'Драгуны Можайск 2014',
+  teamA:'СШОР Металлист', teamB:'Крылья Лобня 2014',
   rosterA: [], rosterB: [],
   coachesA: [], coachesB: [],
   periods: [ [], [], [] ],
   eventType:'goal',
   activePeriod:0,
   library: {},
-  libOrder: ['kryllia2014','dragun2014','lvy','strelka','zenit'],
-  activeLibTab: 'kryllia2014'
+  libOrder: ['metallist2014','kryllia2014','dragun2014','lvy','strelka','zenit'],
+  activeLibTab: 'metallist2014'
 };
 
 // заполнить библиотеку
@@ -561,11 +590,11 @@ for(const key of state.libOrder){
   const t = initialLibrary[key];
   state.library[key] = { name:t.name, intro:t.intro, roster: withIds(t.roster), coaches: t.coaches.map(c=>({...c})) };
 }
-// по умолчанию в текущий матч загружаем Крылья Лобня 2014 (А) и Драгуны Можайск 2014 (Б)
-state.rosterA = state.library['kryllia2014'].roster.map(p=>({...p}));
-state.coachesA = state.library['kryllia2014'].coaches.map(c=>({...c}));
-state.rosterB = state.library['dragun2014'].roster.map(p=>({...p}));
-state.coachesB = state.library['dragun2014'].coaches.map(c=>({...c}));
+// по умолчанию в текущий матч загружаем СШОР Металлист (А, слева) и Крылья Лобня 2014 (Б, справа)
+state.rosterA = state.library['metallist2014'].roster.map(p=>({...p}));
+state.coachesA = state.library['metallist2014'].coaches.map(c=>({...c}));
+state.rosterB = state.library['kryllia2014'].roster.map(p=>({...p}));
+state.coachesB = state.library['kryllia2014'].coaches.map(c=>({...c}));
 
 const STORAGE_KEY = 'hockey-match-state';
 
