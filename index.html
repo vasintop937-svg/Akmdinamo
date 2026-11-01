@@ -566,6 +566,59 @@ const initialLibrary = {
       {role:'Тренер', name:'Мутных Владислав Юрьевич'},
       {role:'Тренер', name:'Костюк Дмитрий Львович'}
     ]
+  },
+  kryllia2016: {
+    name: 'Крылья 2016',
+    intro: '',
+    roster: [
+      {num:'1',  pos:'Вр', name:'Окладников Владимир Александрович'},
+      {num:'55', pos:'Вр', name:'Горосов Денис Игоревич'},
+      {num:'3',  pos:'Нап', name:'Абросимов Степан Андреевич'},
+      {num:'7',  pos:'Защ', name:'Казаев Арсений Дмитриевич'},
+      {num:'8',  pos:'Защ', name:'Загребельный Иван Александрович'},
+      {num:'11', pos:'Нап', name:'Постарнак Марьяна Дмитриевна'},
+      {num:'17', pos:'Защ', name:'Гурьев Ярослав Владиславович'},
+      {num:'69', pos:'Защ', name:'Харламов Максим Андреевич'},
+      {num:'71', pos:'Защ', name:'Усов Федор Дмитриевич'},
+      {num:'77', pos:'Нап', name:'Денисов Денис Артемович (К)'},
+      {num:'81', pos:'Защ', name:'Мягков Михаил Денисович'},
+      {num:'87', pos:'Нап', name:'Какалюк Максим Русланович'},
+      {num:'88', pos:'Защ', name:'Бельский Константин Максимович'},
+      {num:'91', pos:'Нап', name:'Потемка Петр Андреевич'},
+      {num:'97', pos:'Нап', name:'Белаш Игорь Сергеевич'},
+      {num:'99', pos:'Нап', name:'Пупков Максим Дмитриевич (А)'}
+    ],
+    coaches: [
+      {role:'Главный тренер', name:'Иванов Алексей Александрович'},
+      {role:'Тренер', name:'Бусаров Владислав Александрович'},
+      {role:'Тренер', name:'Володин Дмитрий Геннадиевич'}
+    ]
+  },
+  lider2016: {
+    name: 'Лидер Ивантеевка',
+    intro: '',
+    roster: [
+      {num:'1',  pos:'Вр', name:'Дьячков Илья Антонович'},
+      {num:'35', pos:'Вр', name:'Чугунов Владислав Кириллович'},
+      {num:'7',  pos:'Нап', name:'Барвинок Владислав Игоревич'},
+      {num:'14', pos:'Защ', name:'Андреев Степан Дмитриевич'},
+      {num:'15', pos:'Нап', name:'Семеный Артем Спортакович'},
+      {num:'16', pos:'Защ', name:'Ситдиков Руслан Ахматович'},
+      {num:'17', pos:'Нап', name:'Сидоров Михаил Алексеевич'},
+      {num:'19', pos:'Защ', name:'Попков Матвей Владимирович'},
+      {num:'30', pos:'Нап', name:'Якомля Марк Витальевич'},
+      {num:'50', pos:'Защ', name:'Молчанов Павел Андреевич'},
+      {num:'56', pos:'Защ', name:'Сковотнин Константин Андреевич'},
+      {num:'61', pos:'Защ', name:'Алексеенко Тимофей Сергеевич'},
+      {num:'77', pos:'Защ', name:'Лопатин Александр Павлович (К)'},
+      {num:'81', pos:'Защ', name:'Фомичев Илья Игоревич'},
+      {num:'82', pos:'Нап', name:'Жидков Роман Александрович'},
+      {num:'86', pos:'Нап', name:'Демидов Никита Евгеньевич'},
+      {num:'89', pos:'Нап', name:'Петраков Матвей Александрович'}
+    ],
+    coaches: [
+      {role:'Тренер', name:'Зюк Виктор Александрович'}
+    ]
   }
 };
 
@@ -574,15 +627,15 @@ function withIds(list){ return list.map(p => ({ id: nextId++, ...p })); }
 
 let state = {
   meta:{date:'', time:'', tour:'', arena:''},
-  teamA:'СШОР Металлист', teamB:'Крылья Лобня 2014',
+  teamA:'Лидер Ивантеевка', teamB:'Крылья 2016',
   rosterA: [], rosterB: [],
   coachesA: [], coachesB: [],
   periods: [ [], [], [] ],
   eventType:'goal',
   activePeriod:0,
   library: {},
-  libOrder: ['metallist2014','kryllia2014','dragun2014','lvy','strelka','zenit'],
-  activeLibTab: 'metallist2014'
+  libOrder: ['lider2016','kryllia2016','metallist2014','kryllia2014','dragun2014','lvy','strelka','zenit'],
+  activeLibTab: 'lider2016'
 };
 
 // заполнить библиотеку
@@ -590,11 +643,11 @@ for(const key of state.libOrder){
   const t = initialLibrary[key];
   state.library[key] = { name:t.name, intro:t.intro, roster: withIds(t.roster), coaches: t.coaches.map(c=>({...c})) };
 }
-// по умолчанию в текущий матч загружаем СШОР Металлист (А, слева) и Крылья Лобня 2014 (Б, справа)
-state.rosterA = state.library['metallist2014'].roster.map(p=>({...p}));
-state.coachesA = state.library['metallist2014'].coaches.map(c=>({...c}));
-state.rosterB = state.library['kryllia2014'].roster.map(p=>({...p}));
-state.coachesB = state.library['kryllia2014'].coaches.map(c=>({...c}));
+// по умолчанию в текущий матч загружаем Лидер Ивантеевка (А, слева) и Крылья 2016 (Б, справа)
+state.rosterA = state.library['lider2016'].roster.map(p=>({...p}));
+state.coachesA = state.library['lider2016'].coaches.map(c=>({...c}));
+state.rosterB = state.library['kryllia2016'].roster.map(p=>({...p}));
+state.coachesB = state.library['kryllia2016'].coaches.map(c=>({...c}));
 
 const STORAGE_KEY = 'hockey-match-state';
 
